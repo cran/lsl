@@ -1,4 +1,4 @@
-#' lsl: A Package for Latent Structure Learning
+#' lsl: Latent Structure Learning
 #'
 #' \code{lsl} is a package designed for conducting latent structure learning methods. 
 #' In the current version, structural equation modleing 

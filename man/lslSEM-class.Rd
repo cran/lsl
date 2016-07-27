@@ -11,241 +11,136 @@ A Reference Class for Learning a SEM model via penalized likelihood.
 \section{Fields}{
 
 \describe{
-\item{\code{$data}}{A N x P data frame contains responses of N observations on P observed variables. In the present version,
-all variables must be numerical and missing value should be set as \code{NA}. Only complete observations
-will be used for further analysis}
+\item{\code{$data}}{A list of stored data.}
 
-\item{\code{$pattern}}{A list of matrices to represent the pattern of a specified SEM model. \code{$pattern} contains six matrices 
-with element either 0, 1, or -1 to represent fixed, free, or penalized parameter, respectively. 
-The six matrices are \cr
-\itemize{
-\item \code{Ldp}: a P x M pattern matrix for factor loadings. \code{Ldp} must be given and no default 
-value will be generated through method \code{check()}
-\item \code{Psp}: a P x P pattern matrix for measurement error covariances. In the present framework, 
-the diagonal element of \code{Psp} can only be set as 1, i.e., measurement error variance must be 
-freely estimated. The default value of \code{Psp} is the P x P identity matrix.
-\item \code{Btp}: a M x M pattern matrix for path coefficients. The default value of \code{Psp} is 
-the P x P zero matrix.
-\item \code{Php}: a M x M pattern matrix for latent factors or residuals. In the present framework,
-the diagonal element of Php can only be set as 1, i.e., residual variance must be freely estimated.
-The default value of \code{Php} is the M x M identity matrix.
-\item \code{nup}: a P x 1 pattern matrix for intercepts of observed variables. The default value of 
-\code{nup} is the P x 1 matrix with all elements being one.
-\item \code{app}: a M x 1 pattern matrix for intercepts of latent factors. The default value of 
-\code{app} is the M x 1 matrix with all elements being zero.
-}}
+\item{\code{$model}}{A list of pattern matrices and starting values for model parameters.}
 
-\item{\code{$value}}{A list of matrices to specify the starting value and fixed value of a specified SEM model.
-\code{value} also contains six matrices corresponding to \code{pattern}
-\itemize{
-\item \code{Ld}: a P x M matrix for the starting value and fixed value of factor loadings.
-\code{Ld} must be given and no default value will be generated through method \code{check()}
-\item \code{Ps}: a P x P matrix for the starting value and fixed value of measurement error covariances.
-\item \code{Bt}: a M x M matrix for the starting value and fixed value of path coefficients.
-\item \code{Ph}: a M x M matrix for the starting value and fixed value of latent factor or residual covariances.
-\item \code{nu}: a P x 1 matrix for the starting value and fixed value of intercepts of observed variables.
-\item \code{ap}: a M x 1 matrix for the starting value of intercepts of latent factors.
-}
-An element in a matrix of \code{value} represents a stating value if the corresponding element in matrix of 
-\code{pattern} is 1 or -1; otherwise, this element represents a fixed value.}
-
-\item{\code{$penalty}}{A list of vectors to specify penalization related parameters. \code{penalty} contains three elements: 
-\itemize{
-\item \code{type}: a string vector to specify the implemented penalty function. Three penalty functions 
-can be implemented: \code{"l1"}, \code{"scad"}, and \code{"mcp"}. The default penalty is \code{l1}.
-\item \code{gm_all}: a numeric vector to specify a candidate set of regularization parameter gamma. The 
-default value is \code{gm_all = seq(0.01, 0.1, 0.01)}.
-\item \code{dt_all}: a numeric vector to specify a candidate set of delta. The default value is \itemize{
-\item \code{dt_all = Inf} if \code{type = "l1"}
-\item \code{dt_all = c(3, 4)} if \code{type = "scad"}
-\item \code{dt_all = c(2, 3)} if \code{type = "mcp"}
-}
-}}
-
-\item{\code{$control}}{A list of numerical values to specify optimization related parameters. \code{control} contains two elements: 
-\itemize{
-\item \code{itmax}: a numeric value to specify the maximal number of iterations. The default value is 500.
-\item \code{eps}: a numeric value to specify the convergence criterion. The default value is 10^-5.
-}}
-
-\item{\code{$analysis_info}}{A list of numerical values to represent analysis related numbers. \code{analysis_info} includes four elements:
-\itemize{
-\item \code{N}: the number of sample size. 
-\item \code{P}: the number of observed variables.
-\item \code{M}: the number of latent factors.
-\item \code{Qall}: the number of total free and penalized parameters.
-} 
-Each element value of \code{analysis_info} will be automatically 
-assigned when \code{learn()} is executed.}
-
-\item{\code{$obs_moment}}{A list of sample moment created by excuting \code{learn()}.
-\itemize{
-\item \code{Sg}: a P x P sample covariance matrix. 
-\item \code{mu}: a P x 1 sample mean vector. 
-}}
-
-\item{\code{$learn_summary}}{A 3-dimensional array containing the overall analysis result created by executing method \code{learn()}.}
-
-\item{\code{$learn_theta}}{A 3-dimensional array containing the parameter estimates created by executing method \code{learn()}.}
-
-\item{\code{$fit_summary}}{A matrix containing the overall model information and the values of goodness-of-fit indices obtained by 
-method \code{fit()}.}
-
-\item{\code{$fit_theta}}{A Qall x 1 matrix containing parameter estimates obtained through method \code{fit()}.}
-
-\item{\code{$fit_value}}{A list of estimated parameter matrices obtained by \code{fit()}.
-\itemize{
-\item \code{Ld}: a P x M estimated factor loading matrix.
-\item \code{Ps}: a P x P estimated measurement error covariance matrix.
-\item \code{Bt}: a M x M estimated path coefficient matrix.
-\item \code{Ph}: a M x M estimated residual covariance matrix
-\item \code{nu}: a P x 1 estimated observed variable intercept
-\item \code{ap}: a M x 1 estimated latent factor intercept
-}}
-
-\item{\code{$fit_moment}}{A list of model implied moments obtained by \code{fit()}. 
-\itemize{
-\item \code{Sg}: a P x P estimated model implied covariance.
-\item \code{mu}: a P x 1 estimated model implied mean.
-}}
+\item{\code{$structure}}{A list of learned structure based on the inputed data and specified model.}
 }}
 \section{Methods}{
 
 \describe{
-\item{\code{check()}}{Method check() checks the correctness of specifying pattern, value, penalty, and control. If possible,
-check() also generates default values for the unspecified field elements.}
+\item{\code{draw(type, object)}}{Method draw() is used to draw a plot for the learned structure.
+                                   Argument type specify which type of plot should be drawn. 
+ 
+                                   If type = 'overall', draw() will give a plot for the goodness-of-fit indices across different values of gamma and delta.
+                                   The argument object can be used to specify which goodness-of-fit indices should be plot. 
+                                   Its value can be any combination of 'dml', 'srmr', 'rmsea', 'mc', 'ghat', 'cfi', 'nnfi', 'bl89', 'rni', 'aic', and 'bic'.
+                                   The default value is c('dml', 'aic', 'bic'). 
 
-\item{\code{fit(criterion)}}{Method fit() fits a SEM model given the criterion for selecting optimal gm (gamma) and dt (delta). 
-Argument criterion can be 'dml' (likelihood), 'aic', or 'bic'. The default value of criterion is 'bic'. 
-The final model information and goodness-of-fit will be stored in the field fit_summary. The final 
-parameter estimate will be stored in the field fit_theta. The estimated parameter matrix will be stored 
-in the field fit_value. The model implied moments will be stored in the field fit_moment.}
+                                   If type = 'individual', draw() will give a plot for the solution paths of parameter estimates under across different values of gamma and delta.
+                                   The argument object can be used to specify parameters in which matrix should be plot.
+                                   Its value can be 'lambda', 'psi', 'beta', 'phi', 'nu', and 'alpha'.
+                                   The default value is 'lambda'.}
 
-\item{\code{learn()}}{Method learn() calculates PL estimates under each combination of gm (gamma) and dt (delta) in the field gm_all and dt_all respectively. 
-The overall model information will be stored in the field learn_summary and the parameter estimate will be stored in 
-the field learn_theta.}
+\item{\code{input(raw)}}{Method input() is used to input a data set for further statistical analysis. 
 
-\item{\code{plot_path(mat_name, row_idx, col_idx)}}{Method plot_path() draws a plot of solution path given mat_name, row_idx, and col_idx.
-Argument mat_name must be 'Ld', 'Ps', 'Bt', 'Ph', 'nu', or 'ap'.}
+                                   Argument raw is a raw data matrix that will be used for analysis.}
 
-\item{\code{plot_validation()}}{Method plot_validation() draws a plot for likelihood, aic, and bic under values in gm_all and dt_all}
+\item{\code{learn(penalty, control, variable)}}{Method learn() is used to calculate penalized likelihood estimates based on the inputed data and specified model.
+ 
+                                   Argument penalty is a list for the information of penalty function and regularization parameters.
+                                   Argument penalty includes three elements 
+
+                                   (1) type = c('l1', 'scad', 'mcp'): the penalty function to be implemented. The default value is 'l1'; 
+ 
+                                   (2) gamma = seq(0.025, .10, .025): the values of regularization parameter gamma to be considered; 
+ 
+                                   (3) delta = 2.5: the values of shape parameter delta to be considered.
+
+                                   Argument control is a list for controlling the optimization process. 
+                                   Argument control includes two elements: 
+       
+                                   (1) maxit = 500, the maximum number of ECM iterations; 
+ 
+                                   (2) epsilon = 10^-5, the convergence criterion of ECM algorithm. 
+
+                                   Argument variable is a vector of index of variable names to specify which variables in data should be used for analysis.
+                                   The default value is 1:nrow(data$raw), which select all of the variables.}
+
+\item{\code{specify(pattern, value, scale)}}{Method specify() is used to specify a SEM model for fitting.
+
+                                   Argument pattern is a list of pattern matrices for the six model parameter matrices in SEM. 
+                                   For each pattern matrix, the element can be set as 1, 0, or NA.
+                                   1 means that the corresponding parameter should be freely estimated, 
+                                   0 indicates that the parameter sould be fixed, 
+                                   and NA makes the parameter to be estimated with penalization.
+                                   These pattern matrices for the six model parameter matrices include 
+
+                                   (1) lambda: a P by M pattern matrix for loading matrix; 
+
+                                   (2) psi: a P by P pattern matrix covariance matrix of measurement errors. Its default value is diag(1, P). 
+                                       Note that the diagonal element of psi must be set as 1; 
+
+                                   (3) beta: a M by M pattern matrix for path coefficient matrix. Its default value is matrix(0, M, M); 
+
+                                   (4) phi: a M by M pattern matrix for covariance matrix of residuals. Its default value is diag(1, M). 
+                                       Note that the diagonal element of phi must be set as 1; 
+
+                                   (5) nu: a P by 1 pattern matrix for intercepts of observed variables. Its default value is matrix(1, P, 1);
+ 
+                                   (6) alpha: a M by 1 pattern matrix for intercepts of latent factors. Its default value is matrix(0, M, 1).
+
+                                   Argument value is a list of starting value matrices for the six model parameter matrices in SEM.
+                                   These starting value matrices for the six model parameter matrices include 
+
+                                   (1) lambda: a P by M starting value matrix for the loading matrix. The default value for its element is 
+                                       (a) 1 for the freely estimated parameters and (2) 0 for the fixed or penealized parameter.  
+
+                                   (2) psi: a P by P starting value matrix for the covariance matrix of measurement errors. Its default value is diag(0.1, P). 
+
+                                   (3) beta: a M by M starting value matrix for the path coefficient matrix. Its default value is matrix(0, M, M); 
+
+                                   (4) phi: a M by M starting value matrix for the covariance matrix of residuals. Its default value is diag(1, M). 
+
+                                   (5) nu: a P by 1 starting value matrix for the intercepts of observed variables. Its default value is sample means of observed variables;
+ 
+                                   (6) alpha: a M by 1 starting value matrix for the intercepts of latent factors. Its default value is matrix(0, M, 1).
+
+                                   Argument scale is a logical indicator for specifying whether the scale of latent variable should be determined automatically.
+                                   If scale = TRUE, the first freely estimated loading of each latent factor will be set as one for scale setting.
+                                   The default value of scale is 1.
+                                   }
+
+\item{\code{summarize(type)}}{Method summarize() is used to obtained a summary for the learned structure.
+                                     Argument type specify which type of summary should be made. 
+
+                                   If type = 'overall', summarize() will give the overall model information (including goodness-of-fit indices) under best AIC and BIC models. 
+
+                                   If type = 'individual', summarize() will give the parameter estimates under best AIC and BIC model.}
 }}
 \examples{
-#Example 1: Factor Analysis Model#
-#create a P x M population factor loading matrix#
-Ld0 <- diag(1, 4) \%x\% matrix(c(.8, .65, .75, .65, .8), 5, 1)
-Ld0[2, 2] = Ld0[7, 3] = Ld0[12, 4] = Ld0[17, 1] = .5
-Ld0[9, 1] = Ld0[14, 2] = Ld0[19, 3] = Ld0[4, 4] = .5
+#Example 1: Holzinger and Swineford (1939) Data#
+lambda <- matrix(NA, 9, 3)
+lambda[c(1,2,3), 1] <- lambda[c(4,5,6), 2] <- lambda[c(7,8,9), 3] <- 1
 
-#create a M x M population factor covariance matrix#
-Ph0 <- 0.3 * matrix(1, 4, 1) \%*\% matrix(1, 1, 4) + diag( .7, 4)
+rc_sem <- lslSEM()
+rc_sem$input(raw = lavaan::HolzingerSwineford1939)
+rc_sem$specify(pattern = list(lambda = lambda))
+rc_sem$learn(penalty = list(type = "scad"), variable = 7:15)
+rc_sem$draw(type = "overall")
+rc_sem$draw(type = "individual", object = "lambda")
+rc_sem$summarize(type = "overall")
+rc_sem$summarize(type = "individual")
 
-#create a P x P population covariance matrix#
-Sg0 <- Ld0 \%*\% Ph0 \%*\% t(Ld0)
-diag(Sg0) <- 1
+#Example 2: Industrialization and Political Democracy Data#
+lambda <- matrix(0, 11, 3)
+lambda[1:4, 1] <- lambda[5:8, 2] <- lambda[9:11, 3] <- 1
+psi <- diag(1, 11)
+psi[5, 1] <- psi[4, 2] <- psi[6, 2] <- psi[7, 3] <- psi[8, 4] <- psi[8, 6] <- NA
+beta <- matrix(0, 3, 3)
+beta[1, 3] <- beta[2, 1] <- beta[2, 3] <- 1
+phi <- diag(1, 3)
 
-#create a P x P population measurement error covariance matrix#
-Ps0 <- Sg0 - Ld0 \%*\% Ph0 \%*\% t(Ld0)
+rc_sem <- lslSEM()
+rc_sem$input(raw = lavaan::PoliticalDemocracy)
+rc_sem$specify(pattern = list(lambda = lambda, psi = psi, beta = beta, phi = phi))
+rc_sem$learn(penalty = list(type = "scad"))
+rc_sem$draw(type = "overall")
+rc_sem$draw(type = "individual", object = "psi")
+rc_sem$summarize(type = "overall")
+rc_sem$summarize(type = "individual")
 
-#create a P x M pattern matrix for factor loadings#
-Ldp <- 1*(Ld0!=0)
-Ldp[Ld0 < 0.6] = -1
-Ldp[1, 1] = Ldp[6, 2] = Ldp[11, 3] = Ldp[16, 4] = 0
-
-#create a M x M pattern matrix for factor covariance#
-Php <- matrix(1, 4, 4)
-
-#specify field pattern, value, and penalty#
-pattern <- list(Ldp = Ldp, Php = Php)
-value <- list(Ld = Ld0, Ps = Ps0, Ph = Ph0)
-penalty <- list(type = "mcp", gm_all = seq(0.03, .12, .03), dt_all = 1.5)
-
-#generate data with N = 400 and P = 20#
-Z <- matrix(rnorm(400 * 20, 0, 1), 400, 20)
-Y <- Z \%*\% eigen(Sg0)$vectors \%*\% diag(sqrt(eigen(Sg0)$values)) \%*\% t(eigen(Sg0)$vectors)
-Y <- as.data.frame(Y)
-
-#create lslSEM object#
-rc_sem <- lsl:::lslSEM(data = Y, pattern = pattern, value = value, penalty = penalty)
-
-#check the specification through method check()#
-rc_sem$check()
-
-#obtain the estimates under each pair of gamma and dt through method learn()#
-rc_sem$learn()
-
-#obtain the final model based on bic through method fit()#
-rc_sem$fit(criterion = "bic")
-
-#see overall model information and fit indices of final model#
-rc_sem$fit_summary
-
-#see estimated Ld of final model#
-rc_sem$fit_value$Ld
-
-#see the plot for likelihood, aic, and bic under the given gamma and delta values#
-rc_sem$plot_validation()
-
-#################################################################################
-
-#Example 2: A general SEM Model#
-#create a P x M population factor loading matrix#
-Ld0 <- diag(1, 9) \%x\% matrix(c(.8,.75,.8), 3, 1)
-
-#create a M x M population path coefficients matrix#
-Bt0 <- matrix(0, 9, 9)
-Bt0[2, 1] = Bt0[3, 2] = Bt0[5, 4] = Bt0[6, 5] = Bt0[8, 7] = Bt0[9, 8] =.45
-Bt0[4, 1] = Bt0[5, 2] = Bt0[6, 3] = Bt0[7, 4] = Bt0[8, 5] = Bt0[9, 6]= .55
-Bt0iv <- solve(diag(1, 9) - Bt0)
-
-#create a M x M population residual covariance matrix#
-Ph0 <- diag(0, 9)
-Ph0[1, 1] <- 1
-for (m in 2:9) {Ph0[m, m] <- (1 - sum((Bt0iv[m,] ^ 2) * diag(Ph0)))}
-
-#create a P x P population measurement error matrix#
-Ps0 <- diag(c(.36, 0.4375, .36), 27)
-#create a P x M population covariance matrix#
-Sg0 <- Ld0 \%*\% Bt0iv \%*\% Ph0 \%*\% t(Bt0iv) \%*\% t(Ld0) + Ps0
-
-#create a P x M pattern matrix for factor loadings#
-Ldp <- (Ld0 != 0)
-Ldp[1, 1] = Ldp[4, 2] = Ldp[7, 3] = Ldp[10, 4] = Ldp[13, 5] = 0
-Ldp[16, 6] = Ldp[19, 7] = Ldp[22, 8] = Ldp[25, 9] = 0
-
-#create a P x M pattern matrix for path coefficients#
-Btp <- matrix(0, 9, 9)
-Btp[lower.tri(Btp)] <- -1
-
-#specify field pattern, value, and penalty#
-pattern <- list(Ldp = Ldp, Btp = Btp)
-value <- list(Ld = Ld0, Bt = Bt0)
-penalty <- list(type = "mcp", gm_all = seq(0.03, .12, .03), dt_all = 2)
-
-#generate data with N = 400 and P = 27#
-Z <- matrix(rnorm(400 * 27, 0, 1), 400, 27)
-Y <- Z \%*\% eigen(Sg0)$vectors \%*\% diag(sqrt(eigen(Sg0)$values)) \%*\% t(eigen(Sg0)$vectors)
-Y <- as.data.frame(Y)
-
-#create lslSEM object#
-rc_sem <- lslSEM(data = Y, pattern = pattern, value = value, penalty = penalty)
-
-#check the specification through method check()#
-rc_sem$check()
-
-#obtain the estimates under each pair of gamma and dt through method learn()#
-rc_sem$learn()
-
-#obtain the final model based on bic through method fit()#
-rc_sem$fit(criterion = "bic")
-
-#see overall model information and fit indices of final model#
-rc_sem$fit_summary
-
-#see estimated Bt of final model#
-rc_sem$fit_value$Bt
-
-#see the solution path parameters in Bt#
-rc_sem$plot_path(mat_name = "Bt")
+ 
 }
 

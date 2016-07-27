@@ -3,5 +3,6 @@
 export(lslSEM)
 exportClasses(lslSEM)
 import(ggplot2)
+import(lavaan)
 import(methods)
 import(reshape2)

@@ -62,12 +62,14 @@
 
 .sem_dml_cal <- function(Cyc, ey, Sg, mu) {
   Sgiv <- solve(Sg)
-  dml <- - log(det(Sgiv %*% Cyc)) + sum(diag(Sgiv %*% Cyc)) - dim(Sg)[1] + t(ey - mu) %*% Sgiv %*% (ey - mu)
+  dml <- (-log(det(Cyc %*% Sgiv)) + sum(diag(Cyc %*% Sgiv)) - dim(Sg)[1] + t(ey - mu) %*% Sgiv %*% (ey - mu))
   return(dml)
 }
 
 
 .sem_rpl_cal <- function(theta, thetap, type, gm, dt) {
+  gm <- gm
+  dt <- dt
   if (sum(is.na(thetap)) > 0) {
     theta_pl <- c(theta[is.na(thetap)])
     if (type == 'l2') {
@@ -89,18 +91,18 @@
 
 .sem_threshold <- function(ttq, type, wq, gm, dt) {
   if (type == "l2") {
-    ttq <- ttq / (1 + 2 * gm * wq)
+    ttq <- ttq / (1 + gm * wq)
   } else if (type == "l1") {
-    ttq <- sign(ttq) * max(abs(ttq) - gm * wq, 0)
+    ttq <- sign(ttq) * max(abs(ttq) - 0.5 * gm * wq, 0)
   } else if (type == "scad") {
-    if (abs(ttq) <= gm * (1+wq)) {
-      ttq <- sign(ttq) * max(abs(ttq) - gm * wq, 0)
-    } else if (abs(ttq) > gm * (1 + wq) & abs(ttq) <= gm * dt) {
-      ttq <- sign(ttq) * max(abs(ttq) - gm * wq * dt / (dt - 1), 0) / (1 - (wq / (dt - 1)))
+    if (abs(ttq) <= 0.5 * gm * (1+wq)) {
+      ttq <- sign(ttq) * max(abs(ttq) - 0.5 *  gm * wq, 0)
+    } else if (abs(ttq) > 0.5 * gm * (1 + wq) & abs(ttq) <= 0.5 * gm * dt) {
+      ttq <- sign(ttq) * max(abs(ttq) - 0.5 * gm * wq * dt / (dt - 1), 0) / (1 - (wq / (dt - 1)))
     } else {}
   } else if (type == "mcp") {
     if (abs(ttq) <= gm * dt) {
-      ttq <- sign(ttq) * max(abs(ttq) - gm * wq, 0) / (1 - (wq / dt))
+      ttq <- sign(ttq) * max(abs(ttq) - 0.5 * gm * wq, 0) / (1 - (wq / (2 * dt)))
     } else {}
   } else {}
   return(ttq)

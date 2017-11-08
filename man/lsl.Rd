@@ -11,4 +11,3 @@ In the current version, structural equation modleing
 via penalized likelihood can be implemented using the reference class 
 \code{\link{lslSEM}}.
 }
-

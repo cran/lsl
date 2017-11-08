@@ -13,34 +13,15 @@
 #' @exportClass lslSEM
 #' @import methods reshape2 ggplot2 lavaan
 #' @examples
-#' #Example 1: Holzinger and Swineford (1939) Data#
+#' #Example: Holzinger and Swineford (1939) Data#
 #' lambda <- matrix(NA, 9, 3)
 #' lambda[c(1,2,3), 1] <- lambda[c(4,5,6), 2] <- lambda[c(7,8,9), 3] <- 1
 #' 
 #' rc_sem <- lslSEM()
 #' rc_sem$input(raw = lavaan::HolzingerSwineford1939)
 #' rc_sem$specify(pattern = list(lambda = lambda))
-#' rc_sem$learn(penalty = list(type = "scad"), variable = 7:15)
-#' rc_sem$draw(type = "overall")
+#' rc_sem$learn(penalty = list(type = "l1", gamma = seq(.05, .10, .05)), variable = 7:15)
 #' rc_sem$draw(type = "individual", object = "lambda")
-#' rc_sem$summarize(type = "overall")
-#' rc_sem$summarize(type = "individual")
-#'
-#' #Example 2: Industrialization and Political Democracy Data#
-#' lambda <- matrix(0, 11, 3)
-#' lambda[1:4, 1] <- lambda[5:8, 2] <- lambda[9:11, 3] <- 1
-#' psi <- diag(1, 11)
-#' psi[5, 1] <- psi[4, 2] <- psi[6, 2] <- psi[7, 3] <- psi[8, 4] <- psi[8, 6] <- NA
-#' beta <- matrix(0, 3, 3)
-#' beta[1, 3] <- beta[2, 1] <- beta[2, 3] <- 1
-#' phi <- diag(1, 3)
-#' 
-#' rc_sem <- lslSEM()
-#' rc_sem$input(raw = lavaan::PoliticalDemocracy)
-#' rc_sem$specify(pattern = list(lambda = lambda, psi = psi, beta = beta, phi = phi))
-#' rc_sem$learn(penalty = list(type = "scad"))
-#' rc_sem$draw(type = "overall")
-#' rc_sem$draw(type = "individual", object = "psi")
 #' rc_sem$summarize(type = "overall")
 #' rc_sem$summarize(type = "individual")
 #'
@@ -94,11 +75,17 @@ lslSEM <- methods::setRefClass(Class = "lslSEM",
                                    if (is.null(pattern$psi)) {
                                      pattern$psi <- diag(1, dim(pattern$lambda)[1])
                                    }
+                                   if (!identical(pattern$psi, t(pattern$psi))) {
+                                     stop("psi matrix in pattern is not symmetric")
+                                   }
                                    if (is.null(pattern$beta)) {
                                      pattern$beta <- matrix(0, dim(pattern$lambda)[2], dim(pattern$lambda)[2])
                                    }
                                    if (is.null(pattern$phi)) {
                                      pattern$phi <- matrix(1, dim(pattern$lambda)[2], dim(pattern$lambda)[2])
+                                   }
+                                   if (!identical(pattern$phi, t(pattern$phi))) {
+                                     stop("phi matrix in pattern is not symmetric")
                                    }
                                    if (is.null(pattern$nu)) {
                                      pattern$nu <- matrix(1, dim(pattern$lambda)[1], 1)
@@ -113,15 +100,20 @@ lslSEM <- methods::setRefClass(Class = "lslSEM",
                                    if (is.null(value$lambda)) {
                                      value$lambda <- 1*(.is_one(pattern$lambda))
                                    }
-                                   
                                    if (is.null(value$psi)) {
                                      value$psi <- diag(.1, dim(pattern$lambda)[1])
+                                   }
+                                   if (!identical(value$psi, t(value$psi))) {
+                                     stop("psi matrix in value is not symmetric")
                                    }
                                    if (is.null(value$beta)) {
                                      value$beta <- matrix(0, dim(pattern$lambda)[2], dim(pattern$lambda)[2])
                                    }
                                    if (is.null(value$phi)) {
                                      value$phi <- diag(1, dim(pattern$lambda)[2])
+                                   }
+                                   if (!identical(value$phi, t(value$phi))) {
+                                     stop("phi matrix in value is not symmetric")
                                    }
                                    if (is.null(value$nu)) {
                                      value$nu <- matrix(0, dim(pattern$lambda)[1], 1)
@@ -136,11 +128,7 @@ lslSEM <- methods::setRefClass(Class = "lslSEM",
                                      scale_idx <- apply(pattern$lambda == 1, 2, function(x) min(which(x)))
                                      pattern$lambda[cbind(scale_idx, 1:ncol(pattern$lambda))] <- 0
                                    }
-                                   pattern$psi[upper.tri(pattern$psi)] <- pattern$psi[lower.tri(pattern$psi)]
-                                   pattern$phi[upper.tri(pattern$phi)] <- pattern$phi[lower.tri(pattern$phi)]
                                    
-                                   value$psi[upper.tri(value$psi)] <- value$psi[lower.tri(value$psi)]
-                                   value$phi[upper.tri(value$phi)] <- value$phi[lower.tri(value$phi)]
                                    
                                    model$pattern <<- pattern  
                                    model$value <<- value
@@ -245,7 +233,7 @@ lslSEM <- methods::setRefClass(Class = "lslSEM",
                                        fit_summary["df"] <- rst_ecm$df
                                        fit_summary["it"] <- rst_ecm$it
                                        fit_summary["lrt"] <- lrt
-                                       fit_summary["srmr"] <- sqrt(sum(.ltri(((Sg - Sg)^2) / tcrossprod(diag(Sg))))/(P * (P + 1) / 2))
+                                       fit_summary["srmr"] <- sqrt(sum(.ltri(((Sg - structure$obs_moment$Sg)^2) / tcrossprod(diag(Sg))))/(P * (P + 1) / 2))
                                        fit_summary["rmsea"] <- sqrt(max((lrt - df) / (df * N), 0))
                                        fit_summary["mc"] <- exp(-0.5 * (lrt - df) / N)
                                        fit_summary["ghat"] <- P / (P + 2 * (lrt - df) / N)
@@ -262,7 +250,7 @@ lslSEM <- methods::setRefClass(Class = "lslSEM",
                                    }
                                  },
                                  
-                                 summarize = function(type) {
+                                 summarize = function(type, selector, object) {
                                    "Method summarize() is used to obtained a summary for the learned structure.
                                      Argument type specify which type of summary should be made. \n
                                    If type = 'overall', summarize() will give the overall model information (including goodness-of-fit indices) under best AIC and BIC models. \n

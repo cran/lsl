@@ -2,8 +2,8 @@
 % Please edit documentation in R/lslSEM.R
 \docType{class}
 \name{lslSEM-class}
-\alias{lslSEM}
 \alias{lslSEM-class}
+\alias{lslSEM}
 \title{A Reference Class for Learning a SEM model via penalized likelihood.}
 \description{
 A Reference Class for Learning a SEM model via penalized likelihood.
@@ -17,6 +17,7 @@ A Reference Class for Learning a SEM model via penalized likelihood.
 
 \item{\code{$structure}}{A list of learned structure based on the inputed data and specified model.}
 }}
+
 \section{Methods}{
 
 \describe{
@@ -102,45 +103,26 @@ A Reference Class for Learning a SEM model via penalized likelihood.
                                    The default value of scale is 1.
                                    }
 
-\item{\code{summarize(type)}}{Method summarize() is used to obtained a summary for the learned structure.
+\item{\code{summarize(type, selector, object)}}{Method summarize() is used to obtained a summary for the learned structure.
                                      Argument type specify which type of summary should be made. 
 
                                    If type = 'overall', summarize() will give the overall model information (including goodness-of-fit indices) under best AIC and BIC models. 
 
                                    If type = 'individual', summarize() will give the parameter estimates under best AIC and BIC model.}
 }}
+
 \examples{
-#Example 1: Holzinger and Swineford (1939) Data#
+#Example: Holzinger and Swineford (1939) Data#
 lambda <- matrix(NA, 9, 3)
 lambda[c(1,2,3), 1] <- lambda[c(4,5,6), 2] <- lambda[c(7,8,9), 3] <- 1
 
 rc_sem <- lslSEM()
 rc_sem$input(raw = lavaan::HolzingerSwineford1939)
 rc_sem$specify(pattern = list(lambda = lambda))
-rc_sem$learn(penalty = list(type = "scad"), variable = 7:15)
-rc_sem$draw(type = "overall")
+rc_sem$learn(penalty = list(type = "l1", gamma = seq(.05, .10, .05)), variable = 7:15)
 rc_sem$draw(type = "individual", object = "lambda")
-rc_sem$summarize(type = "overall")
-rc_sem$summarize(type = "individual")
-
-#Example 2: Industrialization and Political Democracy Data#
-lambda <- matrix(0, 11, 3)
-lambda[1:4, 1] <- lambda[5:8, 2] <- lambda[9:11, 3] <- 1
-psi <- diag(1, 11)
-psi[5, 1] <- psi[4, 2] <- psi[6, 2] <- psi[7, 3] <- psi[8, 4] <- psi[8, 6] <- NA
-beta <- matrix(0, 3, 3)
-beta[1, 3] <- beta[2, 1] <- beta[2, 3] <- 1
-phi <- diag(1, 3)
-
-rc_sem <- lslSEM()
-rc_sem$input(raw = lavaan::PoliticalDemocracy)
-rc_sem$specify(pattern = list(lambda = lambda, psi = psi, beta = beta, phi = phi))
-rc_sem$learn(penalty = list(type = "scad"))
-rc_sem$draw(type = "overall")
-rc_sem$draw(type = "individual", object = "psi")
 rc_sem$summarize(type = "overall")
 rc_sem$summarize(type = "individual")
 
  
 }
-
